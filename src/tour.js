@@ -3,6 +3,9 @@
 // Start it from ?tour=1, #tour, or "Guided tour" in the side navigation.
 const T = {i: -1, scrolled: false, invite: false};
 const tourEl = s => () => $(s);
+// The smallest element under root whose text has every phrase.
+const holding = (root, ...ps) => () => { const r = $(root); if (!r) return null;
+  return [...r.querySelectorAll('*')].filter(e => ps.every(x => e.textContent.includes(x))).pop() || null; };
 const askWith = a => () => { const b = $(`[data-act="${a}"]`); return b && b.closest('.ask'); };
 function resetFix() {
   $$('.toast').forEach(t => t.remove());
@@ -22,25 +25,25 @@ const atRung = id => () => { if (S.approved) $$('.toast').forEach(t => t.remove(
 
 const TOUR = [
   {go: '#/fixes', at: story, el: tourEl('.page .q-row[href="#/fix/214"]'), t: 'One fix, from proposal to release',
-    b: 'This is the Agent PM\'s fixes inbox at Ridgeline, a fictional retailer. Autopilot reads real conversations, finds where the agent fails, proposes a fix and tests it before anyone looks. The tour follows one fix: refunds on multi-parcel orders, handed to a human 94% of the time.'},
+    b: 'This is the Agent PM\'s fixes inbox at Ridgeline, a fictional retailer. Autopilot reads real conversations, finds where the agent fails and proposes a fix. Before anyone looks, it tests the fix with simulations: conversations played against the current agent and the changed one. The tour follows one fix: refunds on multi-parcel orders, handed to a human 94% of the time.'},
   {go: '#/fix/214', at: atV1, el: () => { const h = $('.page h1'); return h && h.parentElement; }, t: 'Autopilot proposes the change',
     b: 'Refund the returned item without a handoff, once it has been delivered and received back. It is high risk because it moves money. <a class="link" href="#/fix/214/change">See the exact change</a>'},
-  {go: '#/fix/214/tested', at: atV1, el: tourEl('.panel'), t: 'The reviewer writes no simulations',
-    b: () => `The system picked and built all ${N.all} sims for this fix: the 9 real conversations behind the issue, recent conversations the fix should not touch, and sims that must always work. Each runs on the current agent and on the changed one.`},
+  {go: '#/fix/214/tested', at: atV1, el: holding('.panel', 'Reproduce the failure', 'A sample of everything else'), t: 'How the sims test this fix',
+    b: () => `Autopilot picks ${N.all} sims for this fix, more than for most because it moves money. First, the 9 real conversations that were handed off are replayed on the current agent. All 9 end the way the real ones did, so the sims test the right thing. Then they run on the changed agent, along with variations, every rule that must always work, and what sits next to the change. Nobody had to write a sim.`},
   {go: '#/fix/214', at: atV1, el: () => [$('#ready .top'), $('#ready .pips') && $('#ready .pips').closest('.cmp')], t: '8 of 9 fixed. The ninth refunds the wrong card.',
-    b: 'The fix resolves 8 of the 9 real conversations. In the ninth, Omar H. paid $50.00 by gift card and the rest by Visa, and the whole $84.00 refund goes to Visa. A pass rate of 8 of 9 looks good. A broken payments rule stops the fix anyway, so approval is off.'},
-  {go: '#/sim/S-12', at: atV1, el: tourEl('.panel'), t: 'The evidence is one click away',
-    b: 'Every mark opens the conversation it stands for, replayed on both versions, with each checkpoint the sim scored. Refund amounts and tool calls are checked by code, not by an AI judge.'},
+    b: 'Each mark is one of the 9 real conversations, replayed 3 times on each version. On the current agent all 9 go to a human. With the fix, 8 are resolved correctly. In the ninth, Omar H. paid $50.00 by gift card and the rest by Visa, and the whole $84.00 refund goes to Visa. A pass rate of 8 of 9 looks good, but a broken payments rule stops the fix, so approval is off.'},
+  {go: '#/sim/S-12', at: atV1, el: () => [holding('.panel', 'A payments rule is broken', 'gift card first')(), holding('.panel', 'Checkpoint', 'Current agent', 'With the fix', 'original payment method')()], t: 'Inside one sim: Omar\'s refund',
+    b: 'Select any mark to open its sim. This one starts from a real conversation: Omar\'s messages and his real order. Where the changed agent answers differently, an AI customer takes over and plays it to the end. Checkpoints say what must be true, not the exact words. Code checks the final account: the refund should go to the gift card first, but all $84.00 went to Visa.'},
   {go: '#/fix/214', at: atV1, el: askWith('doSendback'), t: 'Decision 1 of 2: send it back',
-    b: 'The reviewer only says what the agent should do: orders paid partly by gift card keep going to a specialist. Autopilot revises the fix and tests it again. Select <b>Next</b>, or the button yourself.'},
+    b: 'The reviewer only says what the agent should do: orders paid partly by gift card keep going to a specialist. Autopilot revises the fix and runs the sims again. Select <b>Next</b>, or the button yourself.'},
   {go: '#/fix/214', at: atV2, el: askWith('acceptEdit'), t: 'Decision 2 of 2: a sim that must always work disagrees',
-    b: 'Version 2 fixes the 8 and keeps gift-card orders with a specialist. One sim that must always work still expects every multi-parcel refund to go to a human. Removing that handoff is the point of the fix, so a person decides which is right. Select <b>Next</b> to update the sim.'},
+    b: 'Version 2 fixes the 8 and keeps gift-card orders with a specialist. One of the sims that must always work, built from the 12 Mar escalation policy, still expects every multi-parcel refund to go to a human. Removing that handoff is the point of the fix, so a person decides which is right. Select <b>Next</b> to update the sim.'},
   {go: '#/fix/214', at: atAnswered, el: tourEl('#ready > .foot'), t: 'Approve, with a prediction',
-    b: 'Approval starts the fix on 10% of refund conversations. It carries a prediction: handoffs on multi-parcel refunds fall from 94% to about 15%. Select <b>Next</b> to approve. There are 10 seconds to undo.'},
+    b: 'Approval starts the fix on 10% of refund conversations. It carries the prediction from the sims: handoffs on multi-parcel refunds fall from 94% to about 15%. Select <b>Next</b> to approve. There are 10 seconds to undo.'},
   {go: '#/fix/214', at: atLive, el: tourEl('#ready .top'), t: 'Checked against real conversations a week later',
-    b: 'The prediction goes out with the release. On 17 Nov it is checked against real conversations, and the result is added to Sim accuracy.'},
+    b: 'The prediction goes out with the release. On 17 Nov it is checked against real conversations, so the sims themselves get tested. The result is added to Sim accuracy.'},
   {go: '#/health', at: atLive, el: () => { const d = [...$$('.page .d')].find(x => x.textContent === 'Fix 214'); return d && d.closest('table'); }, t: 'The record says when to trust the sims',
-    b: 'Sim accuracy sets each prediction next to what real conversations did. Fix 214 waits here until it is checked. Where the sims have been right, review gets lighter. Where they missed, it stays full.'},
+    b: 'Sim accuracy puts each prediction next to what real conversations did. Fix 214 waits here until it is checked. Where the sims have been right, review gets lighter. Where they missed, it stays full.'},
   {go: '#/fix/214', at: atRung('1'), el: tourEl('.phase'), t: 'Built in four rungs. Rung 1: simulations of real conversations',
     b: 'Each rung adds one kind of simulation. Switch rungs here at any time. Purple tags mark what is new. Rung 1 replays the conversations behind the issue and recent ones the fix should not touch, with an AI playing the real customer. Not yet: any written simulation.'},
   {go: '#/fix/214', at: atRung('2'), el: tourEl('.phase'), t: 'Rung 2: simulations of variations',
@@ -64,7 +67,7 @@ function tourMark() {
   const els = [].concat(s.el()).filter(Boolean);
   els.forEach(e => e.classList.add('tour-hl'));
   const c = $('#tour'); if (c) c.classList.toggle('left', !!$('.panel') && innerWidth > 900);
-  if (els[0] && !T.scrolled) { T.scrolled = true; if (!els[0].closest('.panel, .side') || innerWidth <= 900) els[0].scrollIntoView({block: innerWidth <= 900 || els[0].offsetHeight > innerHeight * .6 ? 'start' : 'center', behavior: 'smooth'}); }
+  if (els[0] && !T.scrolled) { T.scrolled = true; if (!els[0].matches('.panel') && (!els[0].closest('.side') || innerWidth <= 900)) els[0].scrollIntoView({block: innerWidth <= 900 || els[0].offsetHeight > innerHeight * .6 ? 'start' : 'center', behavior: 'smooth'}); }
 }
 function tourShow(i) {
   T.i = Math.max(0, Math.min(TOUR.length - 1, i)); T.scrolled = false; T.invite = false;
